@@ -1,5 +1,16 @@
 # PForth - a Portable ANS-like Forth written in ANSI 'C'
 
+## PForth-MT - Preemtive multitasking support and more
+
+TODO:
+- Preemtive multicore multitasking
+- Linux pthread platform + tests
+- Custom "primitive" words
+- Custom exception codes
+- Search ANS wordset + remaining missing ANS 200x words (except Block)
+
+## PForth - a Portable ANS-like Forth written in ANSI 'C' - Original Overview
+
 by Phil Burk
 with Larry Polansky, David Rosenboom and Darren Gibbs.
 Support for 64-bit cells by Aleksej Saushev.
