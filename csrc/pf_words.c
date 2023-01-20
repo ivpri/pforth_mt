@@ -29,7 +29,7 @@
 ** Print number in current base to output stream.
 ** This version does not handle double precision.
 */
-void ffDot( cell_t n )
+void ffDot( DL_TASK cell_t n )
 {
     MSG( ConvertNumberToText( n, gVarBase, TRUE, 1 ) );
     EMIT(' ');
@@ -39,14 +39,14 @@ void ffDot( cell_t n )
 ** Print number in current base to output stream.
 ** This version does not handle double precision.
 */
-void ffDotHex( cell_t n )
+void ffDotHex( DL_TASK cell_t n )
 {
     MSG( ConvertNumberToText( n, 16, FALSE, 1 ) );
     EMIT(' ');
 }
 
 /* ( ... --- ... , print stack ) */
-void ffDotS( void )
+void ffDotS( DL_TASK_VOID )
 {
     cell_t *sp;
     cell_t i, Depth;
@@ -55,8 +55,8 @@ void ffDotS( void )
     MSG( ConvertNumberToText( gVarBase, 10, TRUE, 1 ) ); /* Print base in decimal. */
     MSG("> ");
 
-    Depth = gCurrentTask->td_StackBase - gCurrentTask->td_StackPtr;
-    sp = gCurrentTask->td_StackBase;
+    Depth = TD_STACK_BASE - TD_STACK_PTR;
+    sp = TD_STACK_BASE;
 
     if( Depth < 0 )
     {
@@ -159,7 +159,7 @@ static cell_t HexDigitToNumber( char c )
 }
 
 /* Convert a string to the corresponding number using BASE. */
-cell_t ffNumberQ( const char *FWord, cell_t *Num )
+cell_t ffNumberQ( DL_TASK const char *FWord, cell_t *Num )
 {
     cell_t Len, i, Accum=0, n, Sign=1, Base=gVarBase;
     const char *s;
@@ -210,7 +210,7 @@ cell_t ffNumberQ( const char *FWord, cell_t *Num )
  * convert the word to upper case.  The result is stored in
  * gScratch.
  */
-static char * Word ( char c, int Upcase )
+static char * Word ( DL_TASK char c, int Upcase )
 {
     char *s1,*s2,*s3;
     cell_t n1, n2, n3;
@@ -241,13 +241,13 @@ DBUGX(("Word: s3=%c, %d\n", *s3, n3 ));
 }
 
 /* ( char -- c-addr , parse word ) */
-char * ffWord( char c )
+char * ffWord( DL_TASK char c )
 {
-  return Word( c, TRUE );
+  return Word( L_TASK c, TRUE );
 }
 
 /* ( char -- c-addr , parse word, preserving case ) */
-char * ffLWord( char c )
+char * ffLWord( DL_TASK char c )
 {
-  return Word( c, FALSE );
+  return Word( L_TASK c, FALSE );
 }

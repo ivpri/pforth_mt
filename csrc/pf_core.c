@@ -42,7 +42,13 @@
 ** Global Data
 ***************************************************************/
 
+/* pforth-mt: gScratch and gVarBase with task scope */
+
+#ifndef PF_LOCALIZE_TASK_STACKS
 char            gScratch[TIB_SIZE];
+cell_t          gVarBase;         /* Numeric Base. */
+#endif
+
 pfTaskData_t   *gCurrentTask = NULL;
 pfDictionary_t *gCurrentDictionary;
 cell_t          gNumPrimitives;
@@ -60,7 +66,7 @@ cell_t          gDepthAtColon;
 */
 cell_t          gVarContext;      /* Points to last name field. */
 cell_t          gVarState;        /* 1 if compiling. */
-cell_t          gVarBase;         /* Numeric Base. */
+/* cell_t          gVarBase;   */      /* Numeric Base. */
 cell_t          gVarByeCode;      /* Echo input. */
 cell_t          gVarEcho;         /* Echo input. */
 cell_t          gVarTraceLevel;   /* Trace Level for Inner Interpreter. */
@@ -73,12 +79,25 @@ cell_t          gVarReturnCode;   /* Returned to caller of Forth, eg. UNIX shell
 IncludeFrame    gIncludeStack[MAX_INCLUDE_DEPTH];
 cell_t          gIncludeIndex;
 
-static void pfResetForthTask( void );
-static void pfInit( void );
+static void pfResetForthTask( DL_TASK_VOID );
+static void pfInit( DL_TASK_VOID );
 static void pfTerm( void );
 
-#define DEFAULT_RETURN_DEPTH (512)
+#ifdef PF_DEFAULT_STACK_DEPTH
+#define DEFAULT_USER_DEPTH (PF_DEFAULT_STACK_DEPTH)
+#ifndef PF_DEFAULT_RETURN_DEPTH
+#define PF_DEFAULT_RETURN_DEPTH PF_DEFAULT_STACK_DEPTH
+#endif
+#else
 #define DEFAULT_USER_DEPTH (512)
+#endif
+
+#ifdef PF_DEFAULT_RETURN_DEPTH
+#define DEFAULT_RETURN_DEPTH (PF_DEFAULT_RETURN_DEPTH)
+#else
+#define DEFAULT_RETURN_DEPTH (512)
+#endif
+
 
 #ifndef PF_DEFAULT_HEADER_SIZE
 #define PF_DEFAULT_HEADER_SIZE (120000)
@@ -88,10 +107,18 @@ static void pfTerm( void );
 #define PF_DEFAULT_CODE_SIZE (300000)
 #endif
 
+#ifndef PF_HEADER_SIZE
+#define PF_HEADER_SIZE PF_DEFAULT_HEADER_SIZE
+#endif
+
+#ifndef PF_CODE_SIZE
+#define PF_CODE_SIZE PF_DEFAULT_CODE_SIZE
+#endif
+
 /* Initialize globals in a function to simplify loading on
  * embedded systems which may not support initialization of data section.
  */
-static void pfInit( void )
+static void pfInit( DL_TASK_VOID )
 {
 /* all zero */
     gCurrentTask = NULL;
@@ -124,34 +151,49 @@ static void pfTerm( void )
 ** Task Management
 ***************************************************************/
 
+void pfDeleteTaskStacks( PForthTask task )
+{
+#ifdef PF_LOCALIZE_TASK_STACKS
+    pfLTaskData_t *cftd = (pfLTaskData_t *)task;
+#else    
+    pfTaskData_t *cftd = (pfTaskData_t *)task;
+#endif
+    FREE_VAR( cftd->td_ReturnLimit );
+    FREE_VAR( cftd->td_StackLimit );
+#ifdef PF_SUPPORT_FP
+    FREE_VAR( cftd->td_FloatStackLimit );
+#endif    
+}
+
 void pfDeleteTask( PForthTask task )
 {
     pfTaskData_t *cftd = (pfTaskData_t *)task;
-    FREE_VAR( cftd->td_ReturnLimit );
-    FREE_VAR( cftd->td_StackLimit );
+#ifndef PF_LOCALIZE_TASK_STACKS
+    pfDeleteTaskStacks((PForthTask) task);
+#endif
     pfFreeMem( cftd );
 }
 
 /* Allocate some extra cells to protect against mild stack underflows. */
 #define STACK_SAFETY  (8)
-PForthTask pfCreateTask( cell_t UserStackDepth, cell_t ReturnStackDepth )
+int pfCreateTaskStacks( PForthTask task, cell_t UserStackDepth, cell_t ReturnStackDepth )
 {
-    pfTaskData_t *cftd;
-
-    cftd = ( pfTaskData_t * ) pfAllocMem( sizeof( pfTaskData_t ) );
-    if( !cftd ) goto nomem;
-    pfSetMemory( cftd, 0, sizeof( pfTaskData_t ));
+#ifdef PF_LOCALIZE_TASK_STACKS
+     pfLTaskData_t *cftd = (pfLTaskData_t *)task;
+#else    
+    pfTaskData_t *cftd = (pfTaskData_t *)task;
+#endif
 
 /* Allocate User Stack */
     cftd->td_StackLimit = (cell_t *) pfAllocMem((ucell_t)(sizeof(cell_t) *
                 (UserStackDepth + STACK_SAFETY)));
-    if( !cftd->td_StackLimit ) goto nomem;
+    if( !cftd->td_StackLimit ) return 0;
     cftd->td_StackBase = cftd->td_StackLimit + UserStackDepth;
     cftd->td_StackPtr = cftd->td_StackBase;
 
 /* Allocate Return Stack */
     cftd->td_ReturnLimit = (cell_t *) pfAllocMem((ucell_t)(sizeof(cell_t) * ReturnStackDepth) );
-    if( !cftd->td_ReturnLimit ) goto nomem;
+    if( !cftd->td_ReturnLimit ) return 0;
     cftd->td_ReturnBase = cftd->td_ReturnLimit + ReturnStackDepth;
     cftd->td_ReturnPtr = cftd->td_ReturnBase;
 
@@ -160,11 +202,60 @@ PForthTask pfCreateTask( cell_t UserStackDepth, cell_t ReturnStackDepth )
 /* Allocate room for as many Floats as we do regular data. */
     cftd->td_FloatStackLimit = (PF_FLOAT *) pfAllocMem((ucell_t)(sizeof(PF_FLOAT) *
                 (UserStackDepth + STACK_SAFETY)));
-    if( !cftd->td_FloatStackLimit ) goto nomem;
+    if( !cftd->td_FloatStackLimit ) return 0;
     cftd->td_FloatStackBase = cftd->td_FloatStackLimit + UserStackDepth;
     cftd->td_FloatStackPtr = cftd->td_FloatStackBase;
 #endif
 
+    return 1;
+}
+
+#ifdef PF_LOCALIZE_TASK_STACKS
+PForthTask pfCreateLocalTask( cell_t UserStackDepth, cell_t ReturnStackDepth )
+{
+    pfLTaskData_t *cftd;
+
+    cftd = ( pfLTaskData_t * ) pfAllocMem( sizeof( pfLTaskData_t ) );
+    if( cftd )
+    {
+        pfCreateTaskStacks( (PForthTask) cftd, UserStackDepth, ReturnStackDepth );
+
+        return (PForthTask) cftd;
+    }
+    
+    ERR("CreateTaskContext: insufficient memory.\n");
+    if( cftd ) pfDeleteLocalTask( (PForthTask) cftd );
+    return NULL;
+}
+
+void pfDeleteLocalTask( PForthTask task )
+{
+    pfLTaskData_t *cftd = (pfLTaskData_t *)task;
+    pfDeleteTaskStacks((PForthTask) task);
+    pfFreeMem( cftd );
+}
+
+#endif /* PF_LOCALIZE_TASK_STACKS */
+
+
+
+PForthTask pfCreateTask( cell_t UserStackDepth, cell_t ReturnStackDepth )
+{
+    pfTaskData_t *cftd;
+#ifdef PF_LOCALIZE_TASK_STACKS
+    (void) UserStackDepth;
+    (void) ReturnStackDepth;
+#endif
+
+    cftd = ( pfTaskData_t * ) pfAllocMem( sizeof( pfTaskData_t ) );
+    if( !cftd ) goto nomem;
+    pfSetMemory( cftd, 0, sizeof( pfTaskData_t ));
+
+#ifndef PF_LOCALIZE_TASK_STACKS
+    if(! pfCreateTaskStacks( (PForthTask) cftd, UserStackDepth, ReturnStackDepth ))
+      goto nomem;
+#endif
+    
     cftd->td_InputStream = PF_STDIN;
 
     cftd->td_SourcePtr = &cftd->td_TIB[0];
@@ -182,15 +273,15 @@ nomem:
 ** Dictionary Management
 ***************************************************************/
 
-ThrowCode pfExecIfDefined( const char *CString )
+ThrowCode pfExecIfDefined( DL_TASK const char *CString )
 {
     ThrowCode result = 0;
     if( NAME_BASE != (cell_t)NULL)
     {
         ExecToken  XT;
-        if( ffFindC( CString, &XT ) )
+        if( ffFindC( L_TASK CString, &XT ) )
         {
-            result = pfCatch( XT );
+            result = pfCatch( L_TASK XT );
         }
     }
     return result;
@@ -272,16 +363,16 @@ nomem:
 ** Used by Quit and other routines to restore system.
 ***************************************************************/
 
-static void pfResetForthTask( void )
+static void pfResetForthTask( DL_TASK_VOID )
 {
 /* Go back to terminal input. */
     gCurrentTask->td_InputStream = PF_STDIN;
 
 /* Reset stacks. */
-    gCurrentTask->td_StackPtr = gCurrentTask->td_StackBase;
-    gCurrentTask->td_ReturnPtr = gCurrentTask->td_ReturnBase;
+    TD_STACK_PTR = TD_STACK_BASE;
+    TD_RETURN_PTR = TD_RETURN_BASE;
 #ifdef PF_SUPPORT_FP  /* Reset Floating Point stack too! */
-    gCurrentTask->td_FloatStackPtr = gCurrentTask->td_FloatStackBase;
+    TD_FLOAT_STACK_PTR = TD_FLOAT_STACK_BASE;
 #endif
 
 /* Advance >IN to end of input. */
@@ -319,17 +410,17 @@ cell_t  pfQueryQuiet( void )
 /***************************************************************
 ** Top level interpreter.
 ***************************************************************/
-ThrowCode pfQuit( void )
+ThrowCode pfQuit( DL_TASK_VOID )
 {
     ThrowCode exception;
     int go = 1;
 
     while(go)
     {
-        exception = ffOuterInterpreterLoop();
+        exception = ffOuterInterpreterLoop( L_TASK_VOID );
         if( exception == 0 )
         {
-            exception = ffOK();
+            exception = ffOK( L_TASK_VOID );
         }
 
         switch( exception )
@@ -343,10 +434,10 @@ ThrowCode pfQuit( void )
 
         case THROW_ABORT:
         default:
-            ffDotS();
-            pfReportThrow( exception );
+            ffDotS( L_TASK_VOID );
+            pfReportThrow( L_TASK exception );
             pfHandleIncludeError();
-            pfResetForthTask();
+            pfResetForthTask( L_TASK_VOID );
             break;
         }
     }
@@ -358,7 +449,7 @@ ThrowCode pfQuit( void )
 ** Include file based on 'C' name.
 ***************************************************************/
 
-cell_t pfIncludeFile( const char *FileName )
+cell_t pfIncludeFile( DL_TASK const char *FileName )
 {
     FileStream *fid;
     cell_t Result;
@@ -382,7 +473,7 @@ cell_t pfIncludeFile( const char *FileName )
     pfCopyMemory( &buffer[4], &FileName[len-numChars], numChars+1 );
     CreateDicEntryC( ID_NOOP, buffer, 0 );
 
-    Result = ffIncludeFile( fid ); /* Also close the file. */
+    Result = ffIncludeFile( L_TASK fid ); /* Also close the file. */
 
 /* Create a dictionary word named ;;;; for FILE? */
     CreateDicEntryC( ID_NOOP, ";;;;", 0 );
@@ -445,19 +536,29 @@ ThrowCode pfDoForth( const char *DicFileName, const char *SourceName, cell_t IfI
     pfDictionary_t *dic = NULL;
     ThrowCode Result = 0;
     ExecToken  EntryPoint = 0;
+#ifdef PF_LOCALIZE_TASK_STACKS
+    pfLTaskData_t *lTask;   
+#endif
 
 #ifdef PF_USER_INIT
     Result = PF_USER_INIT;
     if( Result < 0 ) goto error1;
 #endif
 
-    pfInit();
-
 /* Allocate Task structure. */
     pfDebugMessage("pfDoForth: call pfCreateTask()\n");
     cftd = pfCreateTask( DEFAULT_USER_DEPTH, DEFAULT_RETURN_DEPTH );
 
+#ifdef PF_LOCALIZE_TASK_STACKS
+    lTask = pfCreateLocalTask( DEFAULT_USER_DEPTH, DEFAULT_RETURN_DEPTH );
+    pfInit( L_TASK_VOID );
+
+    if( cftd && lTask )
+#else
+    pfInit( L_TASK_VOID );
+
     if( cftd )
+#endif
     {
         pfSetCurrentTask( cftd );
 
@@ -499,7 +600,7 @@ ThrowCode pfDoForth( const char *DicFileName, const char *SourceName, cell_t IfI
         if( IfInit )
         {
             pfDebugMessage("Build dictionary from scratch.\n");
-            dic = pfBuildDictionary( PF_DEFAULT_HEADER_SIZE, PF_DEFAULT_CODE_SIZE );
+            dic = pfBuildDictionary( L_TASK PF_HEADER_SIZE, PF_CODE_SIZE );
         }
         else
 #else
@@ -513,7 +614,7 @@ ThrowCode pfDoForth( const char *DicFileName, const char *SourceName, cell_t IfI
                 {
                     EMIT_CR;
                 }
-                dic = pfLoadDictionary( DicFileName, &EntryPoint );
+                dic = pfLoadDictionary( L_TASK DicFileName, &EntryPoint );
             }
             else
             {
@@ -522,7 +623,7 @@ ThrowCode pfDoForth( const char *DicFileName, const char *SourceName, cell_t IfI
                     MSG(" (static)");
                     EMIT_CR;
                 }
-                dic = pfLoadStaticDictionary();
+                dic = pfLoadStaticDictionary( L_TASK_VOID );
             }
         }
         if( dic == NULL ) goto error2;
@@ -533,7 +634,7 @@ ThrowCode pfDoForth( const char *DicFileName, const char *SourceName, cell_t IfI
         }
 
         pfDebugMessage("pfDoForth: try AUTO.INIT\n");
-        Result = pfExecIfDefined("AUTO.INIT");
+        Result = pfExecIfDefined( L_TASK "AUTO.INIT");
         if( Result != 0 )
         {
             MSG("Error in AUTO.INIT");
@@ -542,7 +643,7 @@ ThrowCode pfDoForth( const char *DicFileName, const char *SourceName, cell_t IfI
 
         if( EntryPoint != 0 )
         {
-            Result = pfCatch( EntryPoint );
+            Result = pfCatch( L_TASK EntryPoint );
         }
 #ifndef PF_NO_SHELL
         else
@@ -550,7 +651,7 @@ ThrowCode pfDoForth( const char *DicFileName, const char *SourceName, cell_t IfI
             if( SourceName == NULL )
             {
                 pfDebugMessage("pfDoForth: pfQuit\n");
-                Result = pfQuit();
+                Result = pfQuit( L_TASK_VOID );
             }
             else
             {
@@ -560,14 +661,17 @@ ThrowCode pfDoForth( const char *DicFileName, const char *SourceName, cell_t IfI
                     MSG(SourceName);
                     MSG("\n");
                 }
-                Result = pfIncludeFile( SourceName );
+                Result = pfIncludeFile( L_TASK SourceName );
             }
         }
 #endif /* PF_NO_SHELL */
 
     /* Clean up after running Forth. */
-        pfExecIfDefined("AUTO.TERM");
+        pfExecIfDefined( L_TASK "AUTO.TERM");
         pfDeleteDictionary( dic );
+#ifdef PF_LOCALIZE_TASK_STACKS
+        pfDeleteLocalTask( lTask );
+#endif
         pfDeleteTask( cftd );
     }
 

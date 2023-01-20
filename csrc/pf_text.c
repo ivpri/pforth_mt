@@ -94,7 +94,7 @@ void pfReportError( const char *FunctionName, Err ErrCode )
     EMIT_CR;
 }
 
-void pfReportThrow( ThrowCode code )
+void pfReportThrow( DL_TASK ThrowCode code )
 {
     const char *s = NULL;
     switch(code)
@@ -121,8 +121,22 @@ void pfReportThrow( ThrowCode code )
         s = "Stack depth changed between : and ; . Probably unbalanced conditional!"; break;
     case THROW_DEFERRED:
         s = "Not a DEFERred word!"; break;
+
+    /* PForth_mt extension */
+    #ifdef PFCUSTOM_FILE
+    #define PFCUSTOM_THROW_TEXT
+    #include PFCUSTOM_FILE
+    #endif
+
     default:
-        s = "Unrecognized throw code!"; break;
+        /* ERRNO mapping */
+        if(code <= -512 && code > -1024) {
+            s = strerror(-512 - code);
+        }
+        else {
+            s = "Unrecognized throw code!"; 
+        }    
+        break;
     }
 
     if( s )

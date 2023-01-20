@@ -80,6 +80,17 @@
 
 #define CREATE_BODY_OFFSET  (3*sizeof(cell_t))
 
+#ifdef PFCUSTOM_FILE
+#define PFCUSTOM_DECLS
+#include PFCUSTOM_FILE
+#endif
+
+#ifdef PFCUSTOM_PROJ_FILE
+#define PFCUSTOM_DECLS
+#include PFCUSTOM_PROJ_FILE
+#endif
+
+
 /***************************************************************
 ** Primitive Token IDS
 ** Do NOT change the order of these IDs or dictionary files will break!
@@ -353,6 +364,13 @@ enum cforth_primitive_ids
     ID_FP_FTANH,
     ID_FP_FPICK,
 #endif
+
+/* pforth_mt: custom primitives */
+#ifdef PFCUSTOM_FILE
+#define PFCUSTOM_IDS
+#include PFCUSTOM_FILE
+#endif
+
 /* Add new IDs by replacing reserved IDs or extending FP routines. */
 /* Do NOT change the order of these IDs or dictionary files will break! */
     NUM_PRIMITIVES     /* This must always be LAST */
@@ -361,31 +379,48 @@ enum cforth_primitive_ids
 
 
 /***************************************************************
-** THROW Codes
+** Throw Codes pforth_mt
 ***************************************************************/
+enum pf_throw_ids
+{
 /* ANSI standard definitions needed by pForth */
-#define THROW_ABORT            (-1)
-#define THROW_ABORT_QUOTE      (-2)
-#define THROW_STACK_OVERFLOW   (-3)
-#define THROW_STACK_UNDERFLOW  (-4)
-#define THROW_UNDEFINED_WORD  (-13)
-#define THROW_EXECUTING       (-14)
-#define THROW_PAIRS           (-22)
-#define THROW_FLOAT_STACK_UNDERFLOW  ( -45)
-#define THROW_QUIT            (-56)
-#define THROW_FLUSH_FILE      (-68)
-#define THROW_RESIZE_FILE     (-74)
+    THROW_ABORT           = -1,
+    THROW_ABORT_QUOTE     = -2,
+    THROW_STACK_OVERFLOW  = -3, 
+    THROW_STACK_UNDERFLOW = -4,
+    THROW_UNDEFINED_WORD  = -13,
+    THROW_EXECUTING       = -14,
+    THROW_PAIRS           = -22,
+    THROW_FLOAT_STACK_UNDERFLOW = -45,
+    THROW_QUIT            = -56,
+    THROW_FLUSH_FILE      = -68,
+    THROW_RESIZE_FILE     = -74,
 
 /* THROW codes unique to pForth */
-#define THROW_BYE            (-256) /* Exit program. */
-#define THROW_SEMICOLON      (-257) /* Error detected at ; */
-#define THROW_DEFERRED       (-258) /* Not a deferred word. Used in system.fth */
+    THROW_BYE             = -256, /* Exit program. */
+    THROW_SEMICOLON       = -257, /* Error detected at ; */
+
+#ifdef PFCUSTOM_FILE
+    THROW_DEFERRED        = -258, /* Not a deferred word. Used in system.fth */
+#define PFCUSTOM_THROW_IDS
+#include PFCUSTOM_FILE
+#else
+    THROW_DEFERRED        = -258 /* Not a deferred word. Used in system.fth */
+#endif
+};
+
 
 /***************************************************************
 ** Structures
 ***************************************************************/
 
+
+#ifdef PF_LOCALIZE_TASK_STACKS
+/* Split data structures - stacks data will be local */
+struct pfLTaskData_s
+#else
 typedef struct pfTaskData_s
+#endif
 {
     cell_t   *td_StackPtr;       /* Primary data stack */
     cell_t   *td_StackBase;
@@ -398,7 +433,17 @@ typedef struct pfTaskData_s
     PF_FLOAT  *td_FloatStackBase;
     PF_FLOAT  *td_FloatStackLimit;
 #endif
-    cell_t   *td_InsPtr;          /* Instruction pointer, "PC" */
+#ifdef PF_LOCALIZE_TASK_STACKS
+    char     Pad[TIB_SIZE];
+    char     Scratch[TIB_SIZE];
+    cell_t   Base;
+    void     *self;              /* With multitasking pointer to self TT (Task Token) */
+};
+  
+typedef struct pfTaskData_s
+{
+#endif
+  /* cell_t   *td_InsPtr; */         /* Instruction pointer, "PC" (localized in pfCatch so not needed here) */
     FileStream   *td_InputStream;
 /* Terminal. */
     char    td_TIB[TIB_SIZE];   /* Buffer for terminal input. */
@@ -466,7 +511,7 @@ typedef struct IncludeFrame
 extern "C" {
 #endif
 
-ThrowCode pfCatch( ExecToken XT );
+ThrowCode pfCatch( DL_TASK ExecToken XT );
 
 #ifdef __cplusplus
 }
@@ -475,9 +520,13 @@ ThrowCode pfCatch( ExecToken XT );
 /***************************************************************
 ** External Globals
 ***************************************************************/
+#ifndef PF_LOCALIZE_TASK_STACKS
+extern char          gScratch[TIB_SIZE];
+extern cell_t        gVarBase;       /* Numeric Base. */
+#endif
+
 extern pfTaskData_t *gCurrentTask;
 extern pfDictionary_t *gCurrentDictionary;
-extern char          gScratch[TIB_SIZE];
 extern cell_t         gNumPrimitives;
 
 extern ExecToken     gLocalCompiler_XT;      /* CFA of (LOCAL) compiler. */
@@ -491,7 +540,6 @@ extern cell_t         gDepthAtColon;
 /* Global variables. */
 extern cell_t        gVarContext;    /* Points to last name field. */
 extern cell_t        gVarState;      /* 1 if compiling. */
-extern cell_t        gVarBase;       /* Numeric Base. */
 extern cell_t        gVarByeCode;    /* BYE-CODE returned on exit */
 extern cell_t        gVarEcho;       /* Echo input from file. */
 extern cell_t        gVarEchoAccept; /* Echo input from ACCEPT. */
@@ -568,10 +616,11 @@ extern cell_t         gIncludeIndex;
 
 #define FREE_VAR(v) { if (v) { pfFreeMem((void *)(v)); v = 0; } }
 
-#define DATA_STACK_DEPTH (gCurrentTask->td_StackBase - gCurrentTask->td_StackPtr)
-#define DROP_DATA_STACK (gCurrentTask->td_StackPtr++)
-#define POP_DATA_STACK (*gCurrentTask->td_StackPtr++)
-#define PUSH_DATA_STACK(x) {*(--(gCurrentTask->td_StackPtr)) = (cell_t) x; }
+#define DATA_STACK_DEPTH (TD_STACK_BASE - TD_STACK_PTR)
+#define DROP_DATA_STACK (TD_STACK_PTR++)
+#define POP_DATA_STACK (*TD_STACK_PTR++)
+#define PUSH_DATA_STACK(x) {*(--(TD_STACK_PTR)) = (cell_t) x; }
+
 
 /* Force Quad alignment. */
 #define QUADUP(x) (((x)+3)&~3)
@@ -600,8 +649,8 @@ extern cell_t         gIncludeIndex;
 #define DBUG(x)  /* PRT(x) */
 #define DBUGX(x) /* DBUG(x) */
 
-#define MSG_NUM_D(msg,num) { MSG(msg); ffDot((cell_t) num); EMIT_CR; }
-#define MSG_NUM_H(msg,num) { MSG(msg); ffDotHex((cell_t) num); EMIT_CR; }
+#define MSG_NUM_D(msg,num) { MSG(msg); ffDot(L_TASK (cell_t) num); EMIT_CR; }
+#define MSG_NUM_H(msg,num) { MSG(msg); ffDotHex(L_TASK (cell_t) num); EMIT_CR; }
 
 #define DBUG_NUM_D(msg,num) { pfDebugMessage(msg); pfDebugPrintDecimalNumber((cell_t) num); pfDebugMessage("\n"); }
 

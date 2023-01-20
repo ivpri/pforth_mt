@@ -22,12 +22,12 @@
 **
 ***************************************************************/
 
-typedef cell_t (*CFunc0)( void );
-typedef cell_t (*CFunc1)( cell_t P1 );
-typedef cell_t (*CFunc2)( cell_t P1, cell_t P2 );
-typedef cell_t (*CFunc3)( cell_t P1, cell_t P2, cell_t P3 );
-typedef cell_t (*CFunc4)( cell_t P1, cell_t P2, cell_t P3, cell_t P4 );
-typedef cell_t (*CFunc5)( cell_t P1, cell_t P2, cell_t P3, cell_t P4, cell_t P5 );
+typedef cell_t (*CFunc0)( DL_TASK_VOID );
+typedef cell_t (*CFunc1)( DL_TASK cell_t P1 );
+typedef cell_t (*CFunc2)( DL_TASK cell_t P1, cell_t P2 );
+typedef cell_t (*CFunc3)( DL_TASK cell_t P1, cell_t P2, cell_t P3 );
+typedef cell_t (*CFunc4)( DL_TASK cell_t P1, cell_t P2, cell_t P3, cell_t P4 );
+typedef cell_t (*CFunc5)( DL_TASK cell_t P1, cell_t P2, cell_t P3, cell_t P4, cell_t P5 );
 
 #ifdef __cplusplus
 extern "C" {
@@ -36,7 +36,7 @@ extern "C" {
 Err   CreateGlueToC( const char *CName, ucell_t Index, cell_t ReturnMode, int32_t NumParams );
 Err   CompileCustomFunctions( void );
 Err   LoadCustomFunctionTable( void );
-cell_t CallUserFunction( cell_t Index, int32_t ReturnMode, int32_t NumParams );
+cell_t CallUserFunction( DL_TASK cell_t Index, int32_t ReturnMode, int32_t NumParams );
 
 #ifdef __cplusplus
 }

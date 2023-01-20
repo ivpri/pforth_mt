@@ -59,7 +59,7 @@
 ***************************************************************/
 #ifdef PF_SUPPORT_FP
 #define FP_STKPTR   (FloatStackPtr)
-#define M_FP_SPZERO (gCurrentTask->td_FloatStackBase)
+#define M_FP_SPZERO (TD_FLOAT_STACK_BASE)
 #define M_FP_POP    (*(FP_STKPTR++))
 #define M_FP_PUSH(n) {*(--(FP_STKPTR)) = (PF_FLOAT) (n);}
 #define M_FP_STACK(n) (FP_STKPTR[n])
@@ -90,42 +90,42 @@
 #ifdef PF_SUPPORT_FP
 #define LOAD_REGISTERS \
     { \
-        STKPTR = gCurrentTask->td_StackPtr; \
+        STKPTR = TD_STACK_PTR; \
         TOS = M_POP; \
-        FP_STKPTR = gCurrentTask->td_FloatStackPtr; \
+        FP_STKPTR = TD_FLOAT_STACK_PTR; \
         FP_TOS = M_FP_POP; \
-        TORPTR = gCurrentTask->td_ReturnPtr; \
+        TORPTR = TD_RETURN_PTR; \
      }
 
 #define SAVE_REGISTERS \
     { \
-        gCurrentTask->td_ReturnPtr = TORPTR; \
+        TD_RETURN_PTR = TORPTR; \
         M_PUSH( TOS ); \
-        gCurrentTask->td_StackPtr = STKPTR; \
+        TD_STACK_PTR = STKPTR; \
         M_FP_PUSH( FP_TOS ); \
-        gCurrentTask->td_FloatStackPtr = FP_STKPTR; \
+        TD_FLOAT_STACK_PTR = FP_STKPTR; \
      }
 
 #else
 /* Cache top of data stack like in JForth. */
 #define LOAD_REGISTERS \
     { \
-        STKPTR = gCurrentTask->td_StackPtr; \
+        STKPTR = TD_STACK_PTR; \
         TOS = M_POP; \
-        TORPTR = gCurrentTask->td_ReturnPtr; \
+        TORPTR = TD_RETURN_PTR; \
      }
 
 #define SAVE_REGISTERS \
     { \
-        gCurrentTask->td_ReturnPtr = TORPTR; \
+        TD_RETURN_PTR = TORPTR; \
         M_PUSH( TOS ); \
-        gCurrentTask->td_StackPtr = STKPTR; \
+        TD_STACK_PTR = STKPTR; \
      }
 #endif
 
 #define M_DOTS \
     SAVE_REGISTERS; \
-    ffDotS( ); \
+    ffDotS( L_TASK_VOID ); \
     LOAD_REGISTERS;
 
 #define DO_VAR(varname) { PUSH_TOS; TOS = (cell_t) &varname; }
@@ -179,7 +179,7 @@ static void TraceNames( ExecToken Token, cell_t Level )
         {
             EMIT( ' ' );
         }
-        ffDotS();
+        ffDotS( L_TASK_VOID );
 /* No longer needed?        gCurrentTask->td_OUT = 0; */ /* !!! Hack for ffDotS() */
 
     }
@@ -273,7 +273,7 @@ static const char *pfSelectFileModeOpen( cell_t fam )
 }
 
 /**************************************************************/
-ThrowCode pfCatch( ExecToken XT )
+ThrowCode pfCatch( DL_TASK ExecToken XT )
 {
     register cell_t  TopOfStack;    /* Cache for faster execution. */
     register cell_t *DataStackPtr;
@@ -339,7 +339,7 @@ DBUG(("pfCatch: Token = 0x%x\n", Token ));
             if((gVarTraceFlags & TRACE_INNER) )
             {
                 MSG("pfCatch: Secondary Token = 0x");
-                ffDotHex(Token);
+                ffDotHex(L_TASK Token);
                 MSG_NUM_H(", InsPtr = 0x", InsPtr);
             }
             TRACENAMES;
@@ -519,20 +519,22 @@ DBUGX(("After Branch: IP = 0x%x\n", InsPtr ));
             Scratch = TOS;
             TOS = M_POP;
             SAVE_REGISTERS;
-            Scratch = pfCatch( Scratch );
+            Scratch = pfCatch( L_TASK Scratch );
             LOAD_REGISTERS;
             M_PUSH( TOS );
             TOS = Scratch;
             endcase;
 
+#ifdef PF_USER_CUSTOM
         case ID_CALL_C:
             SAVE_REGISTERS;
             Scratch = READ_CELL_DIC(InsPtr++);
-            CallUserFunction( Scratch & 0xFFFF,
+            CallUserFunction( L_TASK Scratch & 0xFFFF,
                 (Scratch >> 31) & 1,
                 (Scratch >> 24) & 0x7F );
             LOAD_REGISTERS;
             endcase;
+#endif
 
         /* Support 32/64 bit operation. */
         case ID_CELL:
@@ -573,7 +575,7 @@ DBUGX(("After Branch: IP = 0x%x\n", InsPtr ));
 #ifndef PF_NO_SHELL
         case ID_COLON:
             SAVE_REGISTERS;
-            ffColon( );
+            ffColon( L_TASK_VOID );
             LOAD_REGISTERS;
             endcase;
         case ID_COLON_P:  /* ( $name xt -- ) */
@@ -632,7 +634,7 @@ DBUGX(("After Branch: IP = 0x%x\n", InsPtr ));
 #ifndef PF_NO_SHELL
         case ID_CREATE:
             SAVE_REGISTERS;
-            ffCreate();
+            ffCreate( L_TASK_VOID );
             LOAD_REGISTERS;
             endcase;
 #endif  /* !PF_NO_SHELL */
@@ -867,7 +869,7 @@ DBUG(("XX ah,m,l = 0x%8x,%8x,%8x - qh,l = 0x%8x,%8x\n", ah,am,al, qh,ql ));
 
 #ifndef PF_NO_SHELL
         case ID_DEFER:
-            ffDefer( );
+            ffDefer( L_TASK_VOID );
             endcase;
 #endif  /* !PF_NO_SHELL */
 
@@ -876,13 +878,13 @@ DBUG(("XX ah,m,l = 0x%8x,%8x,%8x - qh,l = 0x%8x,%8x\n", ah,am,al, qh,ql ));
 
         case ID_DEPTH:
             PUSH_TOS;
-            TOS = gCurrentTask->td_StackBase - STKPTR;
+            TOS = TD_STACK_BASE - STKPTR;
             endcase;
 
         case ID_DIVIDE:     BINARY_OP( / ); endcase;
 
         case ID_DOT:
-            ffDot( TOS );
+            ffDot( L_TASK TOS );
             M_DROP;
             endcase;
 
@@ -1228,7 +1230,7 @@ DBUG(("XX ah,m,l = 0x%8x,%8x,%8x - qh,l = 0x%8x,%8x\n", ah,am,al, qh,ql ));
 /* Convert using number converter in 'C'.
 ** Only supports single precision for bootstrap.
 */
-            TOS = (cell_t) ffNumberQ( (char *) TOS, &Temp );
+            TOS = (cell_t) ffNumberQ( L_TASK (char *) TOS, &Temp );
             if( TOS == NUM_TYPE_SINGLE)
             {
                 M_PUSH( Temp );   /* Push single number */
@@ -1245,7 +1247,7 @@ DBUG(("XX ah,m,l = 0x%8x,%8x,%8x - qh,l = 0x%8x,%8x\n", ah,am,al, qh,ql ));
             FileID = (FileStream *) TOS;
             M_DROP;    /* Drop now so that INCLUDE has a clean stack. */
             SAVE_REGISTERS;
-            Scratch = ffIncludeFile( FileID );
+            Scratch = ffIncludeFile( L_TASK FileID );
             LOAD_REGISTERS;
             if( Scratch ) M_THROW(Scratch)
             endcase;
@@ -1254,7 +1256,7 @@ DBUG(("XX ah,m,l = 0x%8x,%8x,%8x - qh,l = 0x%8x,%8x\n", ah,am,al, qh,ql ));
 #ifndef PF_NO_SHELL
         case ID_INTERPRET:
             SAVE_REGISTERS;
-            Scratch = ffInterpret();
+            Scratch = ffInterpret( L_TASK_VOID );
             LOAD_REGISTERS;
             if( Scratch ) M_THROW(Scratch)
             endcase;
@@ -1373,7 +1375,7 @@ DBUG(("XX ah,m,l = 0x%8x,%8x,%8x - qh,l = 0x%8x,%8x\n", ah,am,al, qh,ql ));
             if( FileID )
             {
                 SAVE_REGISTERS;
-                Scratch = ffIncludeFile( FileID ); /* Also closes the file. */
+                Scratch = ffIncludeFile( L_TASK FileID ); /* Also closes the file. */
                 LOAD_REGISTERS;
                 if( Scratch ) M_THROW(Scratch);
             }
@@ -1539,7 +1541,7 @@ DBUG(("XX ah,m,l = 0x%8x,%8x,%8x - qh,l = 0x%8x,%8x\n", ah,am,al, qh,ql ));
 
         case ID_REFILL:
             PUSH_TOS;
-            TOS = (ffRefill() > 0) ? FTRUE : FFALSE;
+            TOS = (ffRefill( L_TASK_VOID ) > 0) ? FTRUE : FFALSE;
             endcase;
 
 /* Resize memory allocated by ALLOCATE. */
@@ -1630,7 +1632,7 @@ DBUG(("XX ah,m,l = 0x%8x,%8x,%8x - qh,l = 0x%8x,%8x\n", ah,am,al, qh,ql ));
                 NameSize = M_POP;
                 EntryPoint = M_POP;
                 ForthStringToC( gScratch, (char *) M_POP, sizeof(gScratch) );
-                TOS =  ffSaveForth( gScratch, EntryPoint, NameSize, CodeSize );
+                TOS =  ffSaveForth( L_TASK gScratch, EntryPoint, NameSize, CodeSize );
             }
             endcase;
 #endif
@@ -1675,7 +1677,7 @@ DBUG(("XX ah,m,l = 0x%8x,%8x,%8x - qh,l = 0x%8x,%8x\n", ah,am,al, qh,ql ));
 #ifndef PF_NO_SHELL
         case ID_SEMICOLON:
             SAVE_REGISTERS;
-            Scratch = ffSemiColon();
+            Scratch = ffSemiColon( L_TASK_VOID );
             LOAD_REGISTERS;
             if( Scratch ) M_THROW( Scratch );
             endcase;
@@ -1757,7 +1759,7 @@ DBUG(("XX ah,m,l = 0x%8x,%8x,%8x - qh,l = 0x%8x,%8x\n", ah,am,al, qh,ql ));
 #ifndef PF_NO_SHELL
         case ID_TICK:
             PUSH_TOS;
-            CharPtr = (char *) ffWord( (char) ' ' );
+            CharPtr = (char *) ffWord( L_TASK (char) ' ' );
             TOS = ffFind( CharPtr, (ExecToken *) &Temp );
             if( TOS == 0 )
             {
@@ -1811,7 +1813,7 @@ DBUG(("XX ah,m,l = 0x%8x,%8x,%8x - qh,l = 0x%8x,%8x\n", ah,am,al, qh,ql ));
             endcase;
 
         case ID_WORD:
-            TOS = (cell_t) ffWord( (char) TOS );
+            TOS = (cell_t) ffWord( L_TASK (char) TOS );
             endcase;
 
         case ID_WORD_FETCH: /* ( waddr -- w ) */
@@ -1864,11 +1866,19 @@ DBUGX(("Before 0Branch: IP = 0x%x\n", InsPtr ));
 DBUGX(("After 0Branch: IP = 0x%x\n", InsPtr ));
             endcase;
 
+
+        /* pforth_mt custom words */
+#ifdef PFCUSTOM_FILE
+#define PFCUSTOM_CODE
+#define PFCUSTOM_THROW_CONSTANTS
+#include PFCUSTOM_FILE
+#endif
+
         default:
             ERR("pfCatch: Unrecognised token = 0x");
-            ffDotHex(Token);
+            ffDotHex(L_TASK Token);
             ERR(" at 0x");
-            ffDotHex((cell_t) InsPtr);
+            ffDotHex(L_TASK (cell_t) InsPtr);
             EMIT_CR;
             InsPtr = 0;
             endcase;
@@ -1884,7 +1894,7 @@ DBUGX(("After 0Branch: IP = 0x%x\n", InsPtr ));
         if( _CrtCheckMemory() == 0 )
         {
             ERR("_CrtCheckMemory abort: InsPtr = 0x");
-            ffDotHex((int)InsPtr);
+            ffDotHex(L_TASK (int)InsPtr);
             ERR("\n");
         }
 #endif

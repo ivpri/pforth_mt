@@ -24,7 +24,7 @@
 extern CFunc0 CustomFunctionTable[];
 
 /***************************************************************/
-cell_t CallUserFunction( cell_t Index, int32_t ReturnMode, int32_t NumParams )
+cell_t CallUserFunction( DL_TASK cell_t Index, int32_t ReturnMode, int32_t NumParams )
 {
     cell_t P1, P2, P3, P4, P5;
     cell_t Result = 0;
@@ -38,29 +38,29 @@ DBUG(("CallUserFunction: Index = %d, ReturnMode = %d, NumParams = %d\n",
     switch( NumParams )
     {
     case 0:
-        Result = ((CFunc0) CF) ( );
+        Result = ((CFunc0) CF) ( L_TASK_VOID );
         break;
     case 1:
         P1 = POP_DATA_STACK;
-        Result = ((CFunc1) CF) ( P1 );
+        Result = ((CFunc1) CF) ( L_TASK P1 );
         break;
     case 2:
         P2 = POP_DATA_STACK;
         P1 = POP_DATA_STACK;
-        Result = ((CFunc2) CF) ( P1, P2 );
+        Result = ((CFunc2) CF) ( L_TASK P1, P2 );
         break;
     case 3:
         P3 = POP_DATA_STACK;
         P2 = POP_DATA_STACK;
         P1 = POP_DATA_STACK;
-        Result = ((CFunc3) CF) ( P1, P2, P3 );
+        Result = ((CFunc3) CF) ( L_TASK P1, P2, P3 );
         break;
     case 4:
         P4 = POP_DATA_STACK;
         P3 = POP_DATA_STACK;
         P2 = POP_DATA_STACK;
         P1 = POP_DATA_STACK;
-        Result = ((CFunc4) CF) ( P1, P2, P3, P4 );
+        Result = ((CFunc4) CF) ( L_TASK P1, P2, P3, P4 );
         break;
     case 5:
         P5 = POP_DATA_STACK;
@@ -68,7 +68,7 @@ DBUG(("CallUserFunction: Index = %d, ReturnMode = %d, NumParams = %d\n",
         P3 = POP_DATA_STACK;
         P2 = POP_DATA_STACK;
         P1 = POP_DATA_STACK;
-        Result = ((CFunc5) CF) ( P1, P2, P3, P4, P5 );
+        Result = ((CFunc5) CF) ( L_TASK P1, P2, P3, P4, P5 );
         break;
     default:
         pfReportError("CallUserFunction", PF_ERR_NUM_PARAMS);

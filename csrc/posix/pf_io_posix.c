@@ -47,7 +47,14 @@ static int stdin_is_tty;
 /* Default portable terminal I/O. */
 int  sdTerminalOut( char c )
 {
-    return putchar(c);
+    int ret;
+
+    ret = putchar(c);
+#ifdef PF_FLUSH_CHAR
+    sdTerminalFlush();
+#endif
+
+    return ret;
 }
 
 int  sdTerminalEcho( char c )
@@ -131,10 +138,6 @@ void sdTerminalInit(void)
         {
             perror("sdTerminalInit: tcsetattr");
         }
-        if (setvbuf(stdout, NULL, _IONBF, (size_t) 0) != 0)
-        {
-            perror("sdTerminalInit: setvbuf");
-        }
     }
 }
 
@@ -149,20 +152,5 @@ void sdTerminalTerm(void)
 
 cell_t sdSleepMillis(cell_t msec)
 {
-    const cell_t kMaxMicros = 500000; /* to be safe, usleep() limit is 1000000 */
-    cell_t micros;
-    cell_t napTime;
-    if (msec < 0) return 0;
-    micros = msec * 1000;
-    while (micros > 0)
-    {
-        napTime = (micros > kMaxMicros) ? kMaxMicros : micros;
-        if (usleep(napTime))
-        {
-            perror("sdSleepMillis: usleep failed");
-            return -1;
-        }
-        micros -= napTime;
-    }
-    return 0;
+    return PF_ERR_NOT_SUPPORTED;
 }

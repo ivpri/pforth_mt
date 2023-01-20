@@ -47,7 +47,7 @@ static cell_t CTest0( cell_t Val )
 static void CTest1( cell_t Val1, cell_t Val2 )
 {
 
-    MSG("CTest1: Val1 = "); ffDot(Val1);
+    MSG("CTest1: Val1 = "); ffDot(L_TASK Val1);
     MSG_NUM_D(", Val2 = ", Val2);
 }
 

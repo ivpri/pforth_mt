@@ -52,7 +52,7 @@ extern "C" {
 #endif
 
 void pfReportError( const char *FunctionName, Err ErrCode );
-void pfReportThrow( ThrowCode code );
+void pfReportThrow( DL_TASK ThrowCode code );
 
 char  *ForthStringToC( char *dst, const char *FString, cell_t dstSize );
 char  *CStringToForth( char *dst, const char *CString, cell_t dstSize  );
