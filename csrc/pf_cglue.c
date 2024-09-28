@@ -21,6 +21,9 @@
 
 #include "pf_all.h"
 
+
+#ifdef PF_USER_CUSTOM
+
 extern CFunc0 CustomFunctionTable[];
 
 /***************************************************************/
@@ -80,6 +83,9 @@ DBUG(("CallUserFunction: Index = %d, ReturnMode = %d, NumParams = %d\n",
 
     return Result;
 }
+
+#endif /* #ifdef PF_USER_CUSTOM */
+
 
 #if (!defined(PF_NO_INIT)) && (!defined(PF_NO_SHELL))
 /***************************************************************/

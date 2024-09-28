@@ -388,6 +388,7 @@ PForthDictionary pfBuildDictionary( DL_TASK cell_t HeaderSize, cell_t CodeSize )
     /* pforth_mt: custom primitives extension */
     #ifdef PFCUSTOM_FILE
     #define PFCUSTOM_DICT
+    #include "pfcustom.h"
     #include PFCUSTOM_FILE
     #endif
 

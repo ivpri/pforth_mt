@@ -30,4 +30,5 @@ pf_text.c
 pf_words.c
 pfcompil.c
 pfcustom.c
+pf_custom_defs.c
 

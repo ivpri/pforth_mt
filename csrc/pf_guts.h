@@ -82,6 +82,7 @@
 
 #ifdef PFCUSTOM_FILE
 #define PFCUSTOM_DECLS
+#include "pfcustom.h"
 #include PFCUSTOM_FILE
 #endif
 
@@ -368,6 +369,7 @@ enum cforth_primitive_ids
 /* pforth_mt: custom primitives */
 #ifdef PFCUSTOM_FILE
 #define PFCUSTOM_IDS
+#include "pfcustom.h"
 #include PFCUSTOM_FILE
 #endif
 
@@ -401,12 +403,12 @@ enum pf_throw_ids
     THROW_SEMICOLON       = -257, /* Error detected at ; */
 
 #ifdef PFCUSTOM_FILE
-    THROW_DEFERRED        = -258, /* Not a deferred word. Used in system.fth */
 #define PFCUSTOM_THROW_IDS
+#include "pfcustom.h"
 #include PFCUSTOM_FILE
-#else
-    THROW_DEFERRED        = -258 /* Not a deferred word. Used in system.fth */
 #endif
+
+    THROW_DEFERRED        = -258 /* Not a deferred word. Used in system.fth */
 };
 
 

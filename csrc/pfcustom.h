@@ -1,4 +1,8 @@
-/* pforth_mt custom words and exception approach */
+/* pforth_mt custom words and exception approach 
+   This obsoletes pfcustom.c file content
+   Set PFCUSTOM_FILE to quoted filename with custom words.
+   E.g. -DPFCUSTOM_FILE='"pfcustom_linux.c"'
+ */
 
 #undef W
 #undef WI
@@ -113,18 +117,18 @@
     cell_t p2 = M_POP;                                        \
     cell_t p1 = M_POP; code)
 
-#define W1(  id, name, p1, code)  W11( id, name, p1, M_DROP; code)
-#define WI1( id, name, p1, code)  WI11(id, name, p1, M_DROP; code)
-#define W2(  id, name, p1, p2, code)  W21( id, name, p1, p2, M_DROP; code)
-#define WI2( id, name, p1, p2, code)  WI21(id, name, p1, p2, M_DROP; code)
-#define W3(  id, name, p1, p2, p3, code)  W31( id, name, p1, p2, p3, M_DROP; code)
-#define WI3( id, name, p1, p2, p3, code)  WI31(id, name, p1, p2, p3, M_DROP; code)
-#define W4(  id, name, p1, p2, p3, p4, code)  W41( id, name, p1, p2, p3, p4, M_DROP; code)
-#define WI4( id, name, p1, p2, p3, p4, code)  WI41(id, name, p1, p2, p3, p4, M_DROP; code)
-#define W5(  id, name, p1, p2, p3, p4, p5, code)  W51( id, name, p1, p2, p3, p4, p5, M_DROP; code)
-#define WI5( id, name, p1, p2, p3, p4, p5, code)  WI51(id, name, p1, p2, p3, p4, p5, M_DROP; code)
-#define W6(  id, name, p1, p2, p3, p4, p5, p6, code)  W61( id, name, p1, p2, p3, p4, p5, p6, M_DROP; code)
-#define WI6( id, name, p1, p2, p3, p4, p5, p6, code)  WI61(id, name, p1, p2, p3, p4, p5, p6, M_DROP; code)
+#define W1(  id, name, p1, code)  W11( id, name, p1, M_DROP; {code;})
+#define WI1( id, name, p1, code)  WI11(id, name, p1, M_DROP; {code;})
+#define W2(  id, name, p1, p2, code)  W21( id, name, p1, p2, M_DROP; {code;})
+#define WI2( id, name, p1, p2, code)  WI21(id, name, p1, p2, M_DROP; {code;})
+#define W3(  id, name, p1, p2, p3, code)  W31( id, name, p1, p2, p3, M_DROP; {code;})
+#define WI3( id, name, p1, p2, p3, code)  WI31(id, name, p1, p2, p3, M_DROP; {code;})
+#define W4(  id, name, p1, p2, p3, p4, code)  W41( id, name, p1, p2, p3, p4, M_DROP; {code;})
+#define WI4( id, name, p1, p2, p3, p4, code)  WI41(id, name, p1, p2, p3, p4, M_DROP; {code;})
+#define W5(  id, name, p1, p2, p3, p4, p5, code)  W51( id, name, p1, p2, p3, p4, p5, M_DROP; {code;})
+#define WI5( id, name, p1, p2, p3, p4, p5, code)  WI51(id, name, p1, p2, p3, p4, p5, M_DROP; {code;})
+#define W6(  id, name, p1, p2, p3, p4, p5, p6, code)  W61( id, name, p1, p2, p3, p4, p5, p6, M_DROP; {code;})
+#define WI6( id, name, p1, p2, p3, p4, p5, p6, code)  WI61(id, name, p1, p2, p3, p4, p5, p6, M_DROP; {code;})
 
 #define W1T(  id, name, p1, code)  W11( id, name, p1, TO_TOS(code))
 #define WI1T( id, name, p1, code)  WI11(id, name, p1, TO_TOS(code))
@@ -138,5 +142,99 @@
 #define WI5T( id, name, p1, p2, p3, p4, p5, code)  WI51(id, name, p1, p2, p3, p4, p5, TO_TOS(code))
 #define W6T(  id, name, p1, p2, p3, p4, p5, p6, code)  W51( id, name, p1, p2, p3, p4, p5, p6, TO_TOS(code))
 #define WI6T( id, name, p1, p2, p3, p4, p5, p6, code)  WI51(id, name, p1, p2, p3, p4, p5, p6, TO_TOS(code))
+
+
+#define WCF0 (cf_name, name) \
+    W(F ## cf_name, name, cf_name())
+
+#define WCF01(cf_name, name) \
+    W(F ## cf_name, name, PUSH_TOS; TOS = (cell_t) cf_name())
+
+#define WCF1 (cf_name, name, p1_t) \
+    W(F ## cf_name, name, p1_t p1 = (p1_t) TOS; M_DROP; cf_name(p1))
+
+#define WCF11 (cf_name, name, p1_t) \
+    W(F ## cf_name, name, p1_t p1 = (p1_t) TOS; TOS = (cell_t) cf_name(p1))
+
+#define WCF2 (cf_name, name, p1_t, p2_t) \
+    W(F ## cf_name, name, \
+        p2_t p2 = (p2_t) TOS; \
+        p1_t p1 = (p1_t) M_POP; \
+        M_DROP; cf_name(p1, p2))
+
+#define WCF21 (cf_name, name, p1_t, p2_t) \
+    W(F ## cf_name, name, \
+        p2_t p2 = (p2_t) TOS; \
+        p1_t p1 = (p1_t) M_POP; \
+        TOS = (cell_t) cf_name(p1, p2))
+
+#define WCF3 (cf_name, name, p1_t, p2_t, p3_t) \
+    W(F ## cf_name, name, \
+        p3_t p3 = (p3_t) TOS; \
+        p2_t p2 = (p2_t) M_POP; \
+        p1_t p1 = (p1_t) M_POP; \
+        M_DROP; cf_name(p1, p2, p3))
+
+#define WCF31 (cf_name, name, p1_t, p2_t, p3_t) \
+    W(F ## cf_name, name, \
+        p3_t p3 = (p3_t) TOS; \
+        p2_t p2 = (p2_t) M_POP; \
+        p1_t p1 = (p1_t) M_POP; \
+        TOS = (cell_t) cf_name(p1, p2, p3))
+
+#define WCF4 (cf_name, name, p1_t, p2_t, p3_t, p4_t) \
+    W(F ## cf_name, name, \
+        p4_t p4 = (p4_t) TOS; \
+        p3_t p3 = (p3_t) M_POP; \
+        p2_t p2 = (p2_t) M_POP; \
+        p1_t p1 = (p1_t) M_POP; \
+        M_DROP; cf_name(p1, p2, p3, p4))
+
+#define WCF41 (cf_name, name, p1_t, p2_t, p3_t, p4_t) \
+    W(F ## cf_name, name, \
+        p4_t p4 = (p4_t) TOS; \
+        p3_t p3 = (p3_t) M_POP; \
+        p2_t p2 = (p2_t) M_POP; \
+        p1_t p1 = (p1_t) M_POP; \
+        TOS = (cell_t) cf_name(p1, p2, p3, p4))
+
+#define WCF5 (cf_name, name, p1_t, p2_t, p3_t, p4_t, p5_t) \
+    W(F ## cf_name, name, \
+        p5_t p5 = (p5_t) TOS; \
+        p4_t p4 = (p4_t) M_POP; \
+        p3_t p3 = (p3_t) M_POP; \
+        p2_t p2 = (p2_t) M_POP; \
+        p1_t p1 = (p1_t) M_POP; \
+        M_DROP; cf_name(p1, p2, p3, p4, p5))
+
+#define WCF51 (cf_name, name, p1_t, p2_t, p3_t, p4_t, p5_t) \
+    W(F ## cf_name, name, \
+        p5_t p5 = (p5_t) TOS; \
+        p4_t p4 = (p4_t) M_POP; \
+        p3_t p3 = (p3_t) M_POP; \
+        p2_t p2 = (p2_t) M_POP; \
+        p1_t p1 = (p1_t) M_POP; \
+        TOS = (cell_t) cf_name(p1, p2, p3, p4, p5))
+
+#define WCF6 (cf_name, name, p1_t, p2_t, p3_t, p4_t, p5_t, p6_t) \
+    W(F ## cf_name, name, \
+        p6_t p6 = (p6_t) TOS; \
+        p5_t p5 = (p5_t) M_PO`P; \
+        p4_t p4 = (p4_t) M_POP; \
+        p3_t p3 = (p3_t) M_POP; \
+        p2_t p2 = (p2_t) M_POP; \
+        p1_t p1 = (p1_t) M_POP; \
+        M_DROP; cf_name(p1, p2, p3, p4, p5, p6))
+
+#define WCF61 (cf_name, name, p1_t, p2_t, p3_t, p4_t, p5_t, p6_t) \
+    W(F ## cf_name, name, \
+        p6_t p6 = (p6_t) TOS; \
+        p5_t p5 = (p5_t) M_POP; \
+        p4_t p4 = (p4_t) M_POP; \
+        p3_t p3 = (p3_t) M_POP; \
+        p2_t p2 = (p2_t) M_POP; \
+        p1_t p1 = (p1_t) M_POP; \
+        TOS = (cell_t) cf_name(p1, p2, p3, p4, p5, p6))
+
 
 #endif

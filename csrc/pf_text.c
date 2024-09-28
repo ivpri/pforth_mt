@@ -125,6 +125,7 @@ void pfReportThrow( DL_TASK ThrowCode code )
     /* PForth_mt extension */
     #ifdef PFCUSTOM_FILE
     #define PFCUSTOM_THROW_TEXT
+    #include "pfcustom.h"
     #include PFCUSTOM_FILE
     #endif
 
