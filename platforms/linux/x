@@ -1,0 +1,80 @@
+[ip@ip pforth_mt]$ diff -bur . ../pforth_esp32/components/pforth/pforth_mt
+Only in ../pforth_esp32/components/pforth/pforth_mt/csrc: cf_time.h
+Only in ../pforth_esp32/components/pforth/pforth_mt/csrc: cf_time_stub.c
+diff -bur ./csrc/linux/cf_time_timerfd.c ../pforth_esp32/components/pforth/pforth_mt/csrc/linux/cf_time_timerfd.c
+--- ./csrc/linux/cf_time_timerfd.c	2023-01-22 15:51:06.790685205 +0100
++++ ../pforth_esp32/components/pforth/pforth_mt/csrc/linux/cf_time_timerfd.c	2023-01-30 21:52:29.896147891 +0100
+@@ -24,18 +24,18 @@
+ #ifdef PF_MS_TIME
+ 
+ #include "../pf_all.h"
+-/* #include "../cf_time.h" */
++#include "../cf_time.h"
+ #include <sys/timerfd.h>
+ #include <time.h>
+ #include <unistd.h>
+ 
+-cell_t sdSleepMillis ( cell_t ms ) {
++void cfMilliSeconds ( DL_TASK cell_t ms ) {
+   struct itimerspec t;
+   int fd;
+   uint64_t exp;
+   ssize_t s;
+ 
+-  if(ms <= 0) return 0;
++  if(ms <= 0) return;
+ 
+   t.it_value.tv_sec = ms / 1000;
+   t.it_value.tv_nsec = (ms % 1000) * 1000000;
+@@ -46,12 +46,12 @@
+ 
+   if(fd == -1) {
+     MSG("Error: timerfd_create()");
+-    return 0;
++    return;
+   }
+ 
+   if(timerfd_settime(fd, 0, &t, NULL) == -1) {
+     MSG("Error: timerfd_settime()");
+-    return 0;
++    return;
+   }
+ 
+   s = read(fd, &exp, sizeof(exp));
+@@ -59,8 +59,6 @@
+   if(s <= 0 || exp <= 0) {
+     MSG("Error: timerfd read");
+   }  
+-
+-  return 0;
+ }
+ 
+ #endif /* PF_MS_TIME */
+diff -bur ./csrc/pfcustom_time.h ../pforth_esp32/components/pforth/pforth_mt/csrc/pfcustom_time.h
+--- ./csrc/pfcustom_time.h	2023-01-22 15:52:47.234452697 +0100
++++ ../pforth_esp32/components/pforth/pforth_mt/csrc/pfcustom_time.h	2023-01-30 21:52:29.904147881 +0100
+@@ -3,5 +3,4 @@
+ #endif
+ 
+ /* idx, func_name, word, return, num_params */
+-/* CFW1(ID_MS,           cfMilliSeconds, "MS",          C_RETURNS_VOID,  ms) */
+-
++CFW1(ID_MS,           cfMilliSeconds, "MS",          C_RETURNS_VOID,  ms)
+diff -bur ./csrc/posix/pf_io_posix.c ../pforth_esp32/components/pforth/pforth_mt/csrc/posix/pf_io_posix.c
+--- ./csrc/posix/pf_io_posix.c	2023-01-22 15:48:37.683030213 +0100
++++ ../pforth_esp32/components/pforth/pforth_mt/csrc/posix/pf_io_posix.c	2023-01-30 21:52:29.904147881 +0100
+@@ -150,9 +150,7 @@
+     }
+ }
+ 
+-/*
+ cell_t sdSleepMillis(cell_t msec)
+ {
+     return PF_ERR_NOT_SUPPORTED;
+ }
+-*/
+\ No newline at end of file
+Only in ./fth: pforth_mt.code-workspace
+File ./.git is a directory while file ../pforth_esp32/components/pforth/pforth_mt/.git is a regular file
+Only in ./platforms: linux
+

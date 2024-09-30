@@ -1869,12 +1869,11 @@ DBUGX(("After 0Branch: IP = 0x%x\n", InsPtr ));
 
 
         /* pforth_mt custom words */
-#ifdef PFCUSTOM_FILE
-#define PFCUSTOM_CODE
-#define PFCUSTOM_THROW_CONSTANTS
-#include "pfcustom.h"
-#include PFCUSTOM_FILE
-#endif
+        #if defined PFCUSTOM_PLATFORM_FILE || defined PFCUSTOM_FILE
+        #define PFCUSTOM_CODE
+        #include "pfcustom_mt.c"
+        #undef PFCUSTOM_CODE
+        #endif
 
         default:
             ERR("pfCatch: Unrecognised token = 0x");

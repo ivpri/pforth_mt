@@ -123,10 +123,10 @@ void pfReportThrow( DL_TASK ThrowCode code )
         s = "Not a DEFERred word!"; break;
 
     /* PForth_mt extension */
-    #ifdef PFCUSTOM_FILE
+    #if defined PFCUSTOM_PLATFORM_FILE || defined PFCUSTOM_FILE
     #define PFCUSTOM_THROW_TEXT
-    #include "pfcustom.h"
-    #include PFCUSTOM_FILE
+    #include "pfcustom_mt.c"
+    #undef PFCUSTOM_THROW_TEXT
     #endif
 
     default:

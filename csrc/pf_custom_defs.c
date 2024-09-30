@@ -3,10 +3,8 @@
 
 #include "pf_all.h"
 
-#ifdef PFCUSTOM_FILE
-
+#if defined PFCUSTOM_PLATFORM_FILE || defined PFCUSTOM_FILE
 #define PFCUSTOM_DEFS
-#include "pfcustom.h"
-#include PFCUSTOM_FILE
-
+#include "pfcustom_mt.c"
+#undef PFCUSTOM_DEFS
 #endif

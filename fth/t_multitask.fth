@@ -37,9 +37,7 @@ variable v 11 v !
 : x 10 ms 22 v +! ;
 
 t{ 0 ' x task swap value t1 --> 0 }t
-t1 . cr
 t{ t1 task.done?  5 ms --> false }t
-abort
 t{ t1 task.done? 10 ms --> false }t
 t{ t1 task.done?  5 ms --> true  }t
 t{ t1 task.done?       --> true  }t

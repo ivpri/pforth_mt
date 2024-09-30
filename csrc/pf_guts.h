@@ -80,15 +80,10 @@
 
 #define CREATE_BODY_OFFSET  (3*sizeof(cell_t))
 
-#ifdef PFCUSTOM_FILE
+#if defined PFCUSTOM_PLATFORM_FILE || defined PFCUSTOM_FILE
 #define PFCUSTOM_DECLS
-#include "pfcustom.h"
-#include PFCUSTOM_FILE
-#endif
-
-#ifdef PFCUSTOM_PROJ_FILE
-#define PFCUSTOM_DECLS
-#include PFCUSTOM_PROJ_FILE
+#include "pfcustom_mt.c"
+#undef PFCUSTOM_DECLS
 #endif
 
 
@@ -367,10 +362,10 @@ enum cforth_primitive_ids
 #endif
 
 /* pforth_mt: custom primitives */
-#ifdef PFCUSTOM_FILE
+#if defined PFCUSTOM_PLATFORM_FILE || defined PFCUSTOM_FILE
 #define PFCUSTOM_IDS
-#include "pfcustom.h"
-#include PFCUSTOM_FILE
+#include "pfcustom_mt.c"
+#undef PFCUSTOM_IDS
 #endif
 
 /* Add new IDs by replacing reserved IDs or extending FP routines. */
@@ -402,10 +397,10 @@ enum pf_throw_ids
     THROW_BYE             = -256, /* Exit program. */
     THROW_SEMICOLON       = -257, /* Error detected at ; */
 
-#ifdef PFCUSTOM_FILE
+#if defined PFCUSTOM_PLATFORM_FILE || defined PFCUSTOM_FILE
 #define PFCUSTOM_THROW_IDS
-#include "pfcustom.h"
-#include PFCUSTOM_FILE
+#include "pfcustom_mt.c"
+#undef PFCUSTOM_THROW_IDS
 #endif
 
     THROW_DEFERRED        = -258 /* Not a deferred word. Used in system.fth */

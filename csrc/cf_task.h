@@ -52,38 +52,6 @@ void      ffTaskFree  ( cfTaskToken_t *tt );
 ThrowCode ffTaskNew   ( DL_TASK cell_t n, cfTaskToken_t **ttptr );
 ThrowCode ffTaskJoin  ( DL_TASK cell_t n, cfTaskToken_t *tt );
 
-/* Functions to be provided by driver */
-
-cell_t cfNewTask      ( DL_TASK cell_t n, cell_t XT );
-cell_t cfNewTaskOnCpu ( DL_TASK cell_t n, cell_t XT, cell_t cpu );
-cell_t cfJoinTask     ( DL_TASK cell_t n, cell_t TT );
-void   cfDetachTask   ( DL_TASK cell_t TT );
-void   cfCancelTask   ( DL_TASK cell_t TT );
-cell_t cfTaskIsDone   ( DL_TASK cell_t TT );
-void   cfTaskSetCPU   ( DL_TASK cell_t mask, cell_t TT );
-void   cfTaskSetPri   ( DL_TASK cell_t pri,  cell_t TT );
-cell_t cfTaskCPU      ( DL_TASK_VOID );
-void   cfYieldTask    ( DL_TASK_VOID );
-
-#ifdef PF_TASK_SUSPEND
-void   cfSuspendTask  ( DL_TASK cell_t TT );
-void   cfResumeTask   ( DL_TASK cell_t TT );
-void   cfSuspendAll   ( DL_TASK_VOID );
-void   cfResumeAll    ( DL_TASK_VOID );
-#endif
-
-#ifdef PF_TASK_SEMAPHORE
-cell_t cfSemaphore               ( DL_TASK cell_t max_count, cell_t init );
-cell_t cfSemaphoreMutex          ( DL_TASK_VOID );
-cell_t cfSemaphoreMutexRecursive ( DL_TASK_VOID );
-void   cfSemaphoreDelete         ( DL_TASK cell_t ST );
-cell_t cfSemaphoreGetCount       ( DL_TASK cell_t ST );
-cell_t cfSemaphoreTake           ( DL_TASK cell_t timeout_ms, cell_t ST );
-void   cfSemaphoreGive           ( DL_TASK cell_t ST );
-void   cfSemaphoreGiveISR        ( DL_TASK cell_t ST );
-cell_t cfSemaphoreTakeISR        ( DL_TASK cell_t ST );
-#endif /* PF_TASK_SEMAPHORE */
-
 
 #ifdef PF_TASK_NOTIFY
 
@@ -94,13 +62,6 @@ cell_t cfSemaphoreTakeISR        ( DL_TASK cell_t ST );
 #define TASK_NOTIFY_ACTION_SETF  0x3
 #define TASK_NOTIFY_ACTION_SETB  0x4
 #define TASK_NOTIFY_ACTION_QUERY 0x8
-
-void   cfTaskNotifyISR   ( DL_TASK cell_t action, cell_t TT );
-void   cfTaskNotify      ( DL_TASK cell_t action, cell_t TT );
-cell_t cfTaskNotifyTake  ( DL_TASK cell_t timeout_ms );
-cell_t cfTaskNotifyTakeD ( DL_TASK cell_t timeout_ms );
-cell_t cfTaskNotifyWait  ( DL_TASK cell_t exit_clr_mask, cell_t entry_clr_mask, cell_t timeout_ms );
-cell_t cfTaskNotifyClear ( DL_TASK cell_t TT );
 
 #endif
 

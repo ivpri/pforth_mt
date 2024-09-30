@@ -1,0 +1,15 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		},
+		{
+			"path": "../../pforth_esp32/components/pforth/pforth_mt"
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"semaphore.h": "c"
+		}
+	}
+}

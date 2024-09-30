@@ -1,7 +1,37 @@
-/* pforth_mt custom words and exception approach 
-   This obsoletes pfcustom.c file content
-   Set PFCUSTOM_FILE to quoted filename with custom words.
+/* pforth_mt custom words embeddings.
+   This is complementary and preffered way to pfcustom.c custom words.
+   This way custom words definitions just like other "primitive" words
+   so there is no calling overhead,
+   
+   How to use it:
+   Set PFCUSTOM_FILE to quoted filename with custom words definitions.
    E.g. -DPFCUSTOM_FILE='"pfcustom_linux.c"'
+   For platform words set PFCUSTOM_PLATFORM_FILE and use same way.
+   Note PFCUSTOM_FILE words definitions are after PFCUSTOM_PLATFORM_FILE words.
+
+   Use Wx macros (see below to define custom words with code.
+   Example:
+   W21(PLUS, "+", x1, x2, TOS = x1 + x2)
+   W2T(PLUS, "+", x1, x2, x1 + x2) // alternative expression only definition
+
+   Use TC macro to define exception message with assigned word.
+   Example:
+   #ifndef MY_TEST_EXCP_N
+   #define MY_TEST_EXCP_N -5025
+   #endif
+   TC(MY_TEST_EXCP_N, MY_TEST_EXCP, "My test exception")
+   WC(MY_TEST_EXCP, "MY-TEST-EXCEPTION-ID", MY_TEST_EXCP_N)
+   W(THROW_MY_EXCEPTION, "THROW-MY-TEST-EXCEPTION", M_THROW(MY_TEST_EXCP_N))
+
+   Custom declarations can be enclosed in the block e.g:
+   #ifdef PFCUSTOM_DECLS
+   typedef my_int int;
+   #endif
+
+   Custom definitions can be embedded as well enclosed in the block e.g.:
+   #ifdef PFCUSTOM_DEFS
+   void my_func() { printf("mfunc\n"); }
+   #endif
  */
 
 #undef W
@@ -237,4 +267,13 @@
         TOS = (cell_t) cf_name(p1, p2, p3, p4, p5, p6))
 
 
+#endif
+
+
+#ifdef PFCUSTOM_PLATFORM_FILE
+#include PFCUSTOM_PLATFORM_FILE
+#endif
+
+#ifdef PFCUSTOM_FILE
+#include PFCUSTOM_FILE
 #endif

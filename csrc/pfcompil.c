@@ -386,10 +386,10 @@ PForthDictionary pfBuildDictionary( DL_TASK cell_t HeaderSize, cell_t CodeSize )
     CreateDicEntryC( ID_ZERO_BRANCH, "0BRANCH", 0 );
 
     /* pforth_mt: custom primitives extension */
-    #ifdef PFCUSTOM_FILE
+    #if defined PFCUSTOM_PLATFORM_FILE || defined PFCUSTOM_FILE
     #define PFCUSTOM_DICT
-    #include "pfcustom.h"
-    #include PFCUSTOM_FILE
+    #include "pfcustom_mt.c"
+    #undef PFCUSTOM_DICT
     #endif
 
     pfDebugMessage("pfBuildDictionary: FindSpecialXTs\n");

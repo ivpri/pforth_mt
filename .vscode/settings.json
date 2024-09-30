@@ -1,0 +1,14 @@
+{
+    "files.associations": {
+        "compare": "c",
+        "cstdint": "c",
+        "pfcustom.h": "c",
+        "time.h": "c",
+        "cstdlib": "c",
+        "array": "c",
+        "string": "c",
+        "string_view": "c",
+        "span": "c",
+        "vector": "c"
+    }
+}
