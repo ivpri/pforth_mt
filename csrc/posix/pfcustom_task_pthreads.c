@@ -522,25 +522,18 @@ CFW2(ID_TASK_NOTIFY,          cfTaskNotify,      "TASK.NOTIFY",         C_RETURN
 
 
 /* TODO: alias */
-W2(TASK_NOTIFY_ISR, "TASK.NOTIFY-ISR", action, TT, 
-  (void) action; 
-  (void) TT;
-  goto _task_notify_start
-)
+W(TASK_NOTIFY_ISR, "TASK.NOTIFY-ISR", goto _task_notify_start)
 
-W2(TASK_NOTIFY, "TASK.NOTIFY", action, TT,
-  _task_notify_start:
-  cfTaskToken_t *tt;
+W(TASK_NOTIFY, "TASK.NOTIFY",
   pthreadTT_t *pt;
-  cell_t val;
-  cell_t prev_val;
-  cell_t ret = FFALSE;
+  cell_t val, prev_val, action;
 
-  tt = (cfTaskToken_t *) TT;
-  pt = (pthreadTT_t *) tt->data;
-
+_task_notify_start:
+  pt = (pthreadTT_t *) ((cfTaskToken_t *) TOS)->data;
+  action = M_POP;
   pthread_mutex_lock(&pt->notify_mux);
   prev_val = pt->notify_val;
+  TOS = FFALSE;
 
   switch(action & TASK_NOTIFY_ACTION_MASK) {
     case TASK_NOTIFY_ACTION_INC:
@@ -548,23 +541,19 @@ W2(TASK_NOTIFY, "TASK.NOTIFY", action, TT,
       break;
       
     case TASK_NOTIFY_ACTION_SETB:
-      pt->notify_val |= POP_DATA_STACK;
+      pt->notify_val |= M_POP;
       break;
 
     case TASK_NOTIFY_ACTION_SETF:
-      pt->notify_val = POP_DATA_STACK;
+      pt->notify_val = M_POP;
       break;
 
     case TASK_NOTIFY_ACTION_SET:
-      val = TOS;
-      M_DROP;
+      val = M_POP;
       
-      if(pt->flags & TASK_NOTIFY_PENDING_FLAG) {
-        ret = FFALSE;
-      }
-      else {      
+      if(!(pt->flags & TASK_NOTIFY_PENDING_FLAG)) {
         pt->notify_val = val;
-        ret = FTRUE;
+        TOS = FTRUE;
       }
       
       break;
@@ -573,15 +562,11 @@ W2(TASK_NOTIFY, "TASK.NOTIFY", action, TT,
   pthread_cond_signal(&pt->notify_cond);
   pthread_mutex_unlock(&pt->notify_mux);
 
-  if(action & TASK_NOTIFY_ACTION_QUERY) {
-    PUSH_TOS;
+  if((action & TASK_NOTIFY_ACTION_MASK) != TASK_NOTIFY_ACTION_SET)
+    TOS = FFALSE;
+  else if(action & TASK_NOTIFY_ACTION_QUERY)
     TOS = prev_val;
-  }
 
-  if((action & TASK_NOTIFY_ACTION_MASK) == TASK_NOTIFY_ACTION_SET) {
-    PUSH_TOS;
-    TOS = ret;
-  }
 )
 
 W11(TASK_NOTIFY_TAKE, "TASK.NOTIFY-TAKE", timeout_ms,

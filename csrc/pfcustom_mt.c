@@ -39,28 +39,28 @@
 #undef TC
 
 #ifdef PFCUSTOM_CODE
-#define W(id, name, code)  \
+#define W(id, name, ...)  \
         case ID_C ## id: { \
-            code; } endcase;
-#define WI(id, name, code) W(id, name, code)
+            __VA_ARGS__; } endcase;
+#define WI(id, name, ...) W(id, name, __VA_ARGS__)
 #define TC(n, id, text)  WC(id, #id, n)
 #undef PFCUSTOM_CODE
 
 #elif defined PFCUSTOM_IDS
-#define W(id, name, code) ID_C ## id,
-#define WI(id, name, code) W(id, name, code)
+#define W(id, name, ...) ID_C ## id,
+#define WI(id, name, ...) W(id, name, code)
 #define TC(n, id, text)  WC(id, #id, n)
 #undef PFCUSTOM_IDS
 
 #elif defined PFCUSTOM_DICT
-#define W(id, name, code)  CreateDicEntryC( ID_C ## id, name, 0 );
-#define WI(id, name, code) CreateDicEntryC( ID_C ## id, name, FLAG_IMMEDIATE );    
+#define W(id, name, ...)  CreateDicEntryC( ID_C ## id, name, 0 );
+#define WI(id, name, ...) CreateDicEntryC( ID_C ## id, name, FLAG_IMMEDIATE );    
 #define TC(n, id, text)  WC(id, #id, n)
 #undef PFCUSTOM_DICT
 
 #else
-#define W(id, name, code)
-#define WI(id, name, code)
+#define W(id, name, ...)
+#define WI(id, name, ...)
 
 #ifdef PFCUSTOM_THROW_IDS
 #define TC(n, id, text)  id = n,
@@ -85,93 +85,93 @@
 #define WC( id, name, lit)        W(id, name, PUSH_TOS; TOS = (cell_t) (lit))
 #define WC2( id, name, lit1, lit2) W(id, name, PUSH_TOS; M_PUSH(lit1); TOS = (cell_t) (lit2))
 
-#define W11( id, name, p1, code)     W(id, name, cell_t p1 = TOS; code)
-#define WI11(id, name, p1, code)    WI(id, name, cell_t p1 = TOS; M_DROP; code)
-#define W21( id, name, p1, p2, code) W(id, name, \
+#define W11( id, name, p1, ...)     W(id, name, cell_t p1 = TOS; __VA_ARGS__)
+#define WI11(id, name, p1, ...)    WI(id, name, cell_t p1 = TOS; M_DROP; __VA_ARGS__)
+#define W21( id, name, p1, p2, ...) W(id, name, \
     cell_t p2 = TOS;                             \
-    cell_t p1 = M_POP; code)
+    cell_t p1 = M_POP; __VA_ARGS__)
 
-#define WI21(id, name, p1, p2, code) WI(id, name, \
+#define WI21(id, name, p1, p2, ...) WI(id, name, \
     cell_t p2 = TOS;                              \
-    cell_t p1 = M_POP; code)
+    cell_t p1 = M_POP; __VA_ARGS__)
 
-#define W31( id, name, p1, p2, p3, code) W(id, name, \
+#define W31( id, name, p1, p2, p3, ...) W(id, name, \
     cell_t p3 = TOS;                                 \
     cell_t p2 = M_POP;                               \
-    cell_t p1 = M_POP; code)
+    cell_t p1 = M_POP; __VA_ARGS__)
 
-#define WI31(id, name, p1, p2, p3, code) WI(id, name, \
+#define WI31(id, name, p1, p2, p3, ...) WI(id, name, \
     cell_t p3 = TOS;                                  \
     cell_t p2 = M_POP;                                \
-    cell_t p1 = M_POP; code)
+    cell_t p1 = M_POP; __VA_ARGS__)
 
-#define W41( id, name, p1, p2, p3, p4, code) W(id, name, \
+#define W41( id, name, p1, p2, p3, p4, ...) W(id, name, \
     cell_t p4 = TOS;                                     \
     cell_t p3 = M_POP;                                   \
     cell_t p2 = M_POP;                                   \
-    cell_t p1 = M_POP; code)
+    cell_t p1 = M_POP; __VA_ARGS__)
 
-#define WI41(id, name, p1, p2, p3, p4, code) WI(id, name, \
+#define WI41(id, name, p1, p2, p3, p4, ...) WI(id, name, \
     cell_t p4 = TOS;                                      \
     cell_t p3 = M_POP;                                    \
     cell_t p2 = M_POP;                                    \
-    cell_t p1 = M_POP; code)
+    cell_t p1 = M_POP; __VA_ARGS__)
 
-#define W51( id, name, p1, p2, p3, p4, p5, code) W(id, name, \
+#define W51( id, name, p1, p2, p3, p4, p5, ...) W(id, name, \
     cell_t p5 = TOS;                                         \
     cell_t p4 = M_POP;                                       \
     cell_t p3 = M_POP;                                       \
     cell_t p2 = M_POP;                                       \
-    cell_t p1 = M_POP; code)
+    cell_t p1 = M_POP; __VA_ARGS__)
 
-#define WI51(id, name, p1, p2, p3, p4, p5, code) WI(id, name, \
+#define WI51(id, name, p1, p2, p3, p4, p5, ...) WI(id, name, \
     cell_t p5 = TOS;                                          \
     cell_t p4 = M_POP;                                        \
     cell_t p3 = M_POP;                                        \
     cell_t p2 = M_POP;                                        \
-    cell_t p1 = M_POP; code)
+    cell_t p1 = M_POP; __VA_ARGS__)
 
-#define W61( id, name, p1, p2, p3, p4, p5, p6, code) W(id, name, \
+#define W61( id, name, p1, p2, p3, p4, p5, p6, ...) W(id, name, \
     cell_t p6 = TOS;                                         \
     cell_t p5 = M_POP;                                       \
     cell_t p4 = M_POP;                                       \
     cell_t p3 = M_POP;                                       \
     cell_t p2 = M_POP;                                       \
-    cell_t p1 = M_POP; code)
+    cell_t p1 = M_POP; __VA_ARGS__)
 
-#define WI61(id, name, p1, p2, p3, p4, p5, p6, code) WI(id, name, \
+#define WI61(id, name, p1, p2, p3, p4, p5, p6, ...) WI(id, name, \
     cell_t p6 = TOS;                                          \
     cell_t p5 = M_POP;                                        \
     cell_t p4 = M_POP;                                        \
     cell_t p3 = M_POP;                                        \
     cell_t p2 = M_POP;                                        \
-    cell_t p1 = M_POP; code)
+    cell_t p1 = M_POP; __VA_ARGS__)
 
-#define W1(  id, name, p1, code)  W11( id, name, p1, M_DROP; {code;})
-#define WI1( id, name, p1, code)  WI11(id, name, p1, M_DROP; {code;})
-#define W2(  id, name, p1, p2, code)  W21( id, name, p1, p2, M_DROP; {code;})
-#define WI2( id, name, p1, p2, code)  WI21(id, name, p1, p2, M_DROP; {code;})
-#define W3(  id, name, p1, p2, p3, code)  W31( id, name, p1, p2, p3, M_DROP; {code;})
-#define WI3( id, name, p1, p2, p3, code)  WI31(id, name, p1, p2, p3, M_DROP; {code;})
-#define W4(  id, name, p1, p2, p3, p4, code)  W41( id, name, p1, p2, p3, p4, M_DROP; {code;})
-#define WI4( id, name, p1, p2, p3, p4, code)  WI41(id, name, p1, p2, p3, p4, M_DROP; {code;})
-#define W5(  id, name, p1, p2, p3, p4, p5, code)  W51( id, name, p1, p2, p3, p4, p5, M_DROP; {code;})
-#define WI5( id, name, p1, p2, p3, p4, p5, code)  WI51(id, name, p1, p2, p3, p4, p5, M_DROP; {code;})
-#define W6(  id, name, p1, p2, p3, p4, p5, p6, code)  W61( id, name, p1, p2, p3, p4, p5, p6, M_DROP; {code;})
-#define WI6( id, name, p1, p2, p3, p4, p5, p6, code)  WI61(id, name, p1, p2, p3, p4, p5, p6, M_DROP; {code;})
+#define W1(  id, name, p1, ...)  W11( id, name, p1, M_DROP; {__VA_ARGS__;})
+#define WI1( id, name, p1, ...)  WI11(id, name, p1, M_DROP; {__VA_ARGS__;})
+#define W2(  id, name, p1, p2, ...)  W21( id, name, p1, p2, M_DROP; {__VA_ARGS__;})
+#define WI2( id, name, p1, p2, ...)  WI21(id, name, p1, p2, M_DROP; {__VA_ARGS__;})
+#define W3(  id, name, p1, p2, p3, ...)  W31( id, name, p1, p2, p3, M_DROP; {__VA_ARGS__;})
+#define WI3( id, name, p1, p2, p3, ...)  WI31(id, name, p1, p2, p3, M_DROP; {__VA_ARGS__;})
+#define W4(  id, name, p1, p2, p3, p4, ...)  W41( id, name, p1, p2, p3, p4, M_DROP; {__VA_ARGS__;})
+#define WI4( id, name, p1, p2, p3, p4, ...)  WI41(id, name, p1, p2, p3, p4, M_DROP; {__VA_ARGS__;})
+#define W5(  id, name, p1, p2, p3, p4, p5, ...)  W51( id, name, p1, p2, p3, p4, p5, M_DROP; {__VA_ARGS__;})
+#define WI5( id, name, p1, p2, p3, p4, p5, ...)  WI51(id, name, p1, p2, p3, p4, p5, M_DROP; {__VA_ARGS__;})
+#define W6(  id, name, p1, p2, p3, p4, p5, p6, ...)  W61( id, name, p1, p2, p3, p4, p5, p6, M_DROP; {__VA_ARGS__;})
+#define WI6( id, name, p1, p2, p3, p4, p5, p6, ...)  WI61(id, name, p1, p2, p3, p4, p5, p6, M_DROP; {__VA_ARGS__;})
 
-#define W1T(  id, name, p1, code)  W11( id, name, p1, TO_TOS(code))
-#define WI1T( id, name, p1, code)  WI11(id, name, p1, TO_TOS(code))
-#define W2T(  id, name, p1, p2, code)  W21( id, name, p1, p2, TO_TOS(code))
-#define WI2T( id, name, p1, p2, code)  WI21(id, name, p1, p2, TO_TOS(code))
-#define W3T(  id, name, p1, p2, p3, code)  W31( id, name, p1, p2, p3, TO_TOS(code))
-#define WI3T( id, name, p1, p2, p3, code)  WI31(id, name, p1, p2, p3, TO_TOS(code))
-#define W4T(  id, name, p1, p2, p3, p4, code)  W41( id, name, p1, p2, p3, p4, TO_TOS(code))
-#define WI4T( id, name, p1, p2, p3, p4, code)  WI41(id, name, p1, p2, p3, p4, TO_TOS(code))
-#define W5T(  id, name, p1, p2, p3, p4, p5, code)  W51( id, name, p1, p2, p3, p4, p5, TO_TOS(code))
-#define WI5T( id, name, p1, p2, p3, p4, p5, code)  WI51(id, name, p1, p2, p3, p4, p5, TO_TOS(code))
-#define W6T(  id, name, p1, p2, p3, p4, p5, p6, code)  W51( id, name, p1, p2, p3, p4, p5, p6, TO_TOS(code))
-#define WI6T( id, name, p1, p2, p3, p4, p5, p6, code)  WI51(id, name, p1, p2, p3, p4, p5, p6, TO_TOS(code))
+#define W1T(  id, name, p1, ...)  W11( id, name, p1, TO_TOS(__VA_ARGS__))
+#define WI1T( id, name, p1, ...)  WI11(id, name, p1, TO_TOS(__VA_ARGS__))
+#define W2T(  id, name, p1, p2, ...)  W21( id, name, p1, p2, TO_TOS(__VA_ARGS__))
+#define WI2T( id, name, p1, p2, ...)  WI21(id, name, p1, p2, TO_TOS(__VA_ARGS__))
+#define W3T(  id, name, p1, p2, p3, ...)  W31( id, name, p1, p2, p3, TO_TOS(__VA_ARGS__))
+#define WI3T( id, name, p1, p2, p3, ...)  WI31(id, name, p1, p2, p3, TO_TOS(__VA_ARGS__))
+#define W4T(  id, name, p1, p2, p3, p4, ...)  W41( id, name, p1, p2, p3, p4, TO_TOS(__VA_ARGS__))
+#define WI4T( id, name, p1, p2, p3, p4, ...)  WI41(id, name, p1, p2, p3, p4, TO_TOS(__VA_ARGS__))
+#define W5T(  id, name, p1, p2, p3, p4, p5, ...)  W51( id, name, p1, p2, p3, p4, p5, TO_TOS(__VA_ARGS__))
+#define WI5T( id, name, p1, p2, p3, p4, p5, ...)  WI51(id, name, p1, p2, p3, p4, p5, TO_TOS(__VA_ARGS__))
+#define W6T(  id, name, p1, p2, p3, p4, p5, p6, ...)  W51( id, name, p1, p2, p3, p4, p5, p6, TO_TOS(__VA_ARGS__))
+#define WI6T( id, name, p1, p2, p3, p4, p5, p6, ...)  WI51(id, name, p1, p2, p3, p4, p5, p6, TO_TOS(__VA_ARGS__))
 
 
 #define WCF0 (cf_name, name) \
